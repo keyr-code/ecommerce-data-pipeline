@@ -1,0 +1,4 @@
+# Configuration files will be placed here
+# - database.yaml: Database connection settings
+# - pipeline.yaml: Pipeline configuration
+# - validation_rules.yaml: Data validation rules

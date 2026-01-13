@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy source code
 COPY src/ ./src/
 COPY data/ ./data/
-COPY scripts/init_db.py ./init_db.py
+COPY ../init_db.py ./init_db.py
 
 # Create directories for logs and database
 RUN mkdir -p /app/pipeline_logs /app/database

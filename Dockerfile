@@ -9,24 +9,23 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
-COPY scripts/requirements.txt ./requirements.txt
+COPY requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code
 COPY src/ ./src/
-COPY data/ ./data/
-COPY ../init_db.py ./init_db.py
+COPY sql/ ./sql/
+COPY config/ ./config/
 
-# Create directories for logs and database
-RUN mkdir -p /app/pipeline_logs /app/database
-
-# Initialize database on build
-RUN python init_db.py
+# Create directories for logs, database, and data
+RUN mkdir -p /app/pipeline_logs /app/database /app/data
 
 # Set environment variables
-ENV PYTHONPATH=/app/src
+ENV PYTHONPATH=/app
 ENV MONGO_HOST=mongodb
 ENV MONGO_PORT=27017
+ENV DUCKDB_PATH=/app/database/data_eng.db
+ENV DATA_PATH=/app/data
 
 # Default command
-CMD ["python", "src/batch_load.py"]
+CMD ["python", "-m", "src.silver.batch_load"]

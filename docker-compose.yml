@@ -11,7 +11,7 @@ services:
       MONGO_INITDB_DATABASE: pipeline_logs
     volumes:
       - mongodb_data:/data/db
-      - ./config/mongo-init:/docker-entrypoint-initdb.d
+      - ./config:/app/config
     networks:
       - pipeline_network
 
@@ -28,11 +28,14 @@ services:
       - MONGO_DATABASE=pipeline_logs
       - DUCKDB_PATH=/app/database/data_eng.db
       - DATA_PATH=/app/data
+      - PYTHONPATH=/app
     volumes:
       - ./src:/app/src
       - ./data:/app/data
-      - ./pipeline_logs:/app/pipeline_logs
+      - ./logs:/app/logs
       - ./database:/app/database
+      - ./sql:/app/sql
+      - ./config:/app/config
     networks:
       - pipeline_network
     command: tail -f /dev/null  # Keep container running for interactive use

@@ -1,9 +1,9 @@
 import duckdb
-from data_quality_validator import DataQualityValidator, Severity
+from src.silver.data_quality_validator import DataQualityValidator, Severity
 import pandas as pd
-from data_config import config_mapping
-from reset_database import clear_data_only
-from pipeline_logger import PipelineLogger
+from src.silver.data_config import config_mapping
+from src.common.reset_database import clear_data_only
+from src.common.logger import PipelineLogger
 from typing import Dict, List, Any, Tuple, Union, Optional
 import os
 

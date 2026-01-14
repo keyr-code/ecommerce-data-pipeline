@@ -3,7 +3,7 @@ from pathlib import Path
 from datetime import datetime
 import uuid
 import logging
-from mongo_log_ingester import MongoLogDB
+from src.common.mongo_log_ingester import MongoLogDB
 
 
 class PipelineLogger:

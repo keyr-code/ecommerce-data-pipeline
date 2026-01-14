@@ -4,8 +4,6 @@ Initialize DuckDB database and schema for Docker container
 """
 
 import os
-import sys
-sys.path.append('/app/src')
 
 from reset_database import reset_database
 

@@ -1,4 +1,4 @@
-from data_quality_validator import DataQualityValidator
+from src.silver.data_quality_validator import DataQualityValidator
 import pandas as pd
 
 # Load and inspect data

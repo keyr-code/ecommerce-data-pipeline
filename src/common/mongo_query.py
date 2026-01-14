@@ -4,7 +4,7 @@ MongoDB Pipeline Log Query CLI
 """
 
 import argparse
-from mongo_log_ingester import MongoLogDB, PipelineLogIngester
+from src.common.mongo_log_ingester import MongoLogDB, PipelineLogIngester
 from datetime import datetime
 import json
 

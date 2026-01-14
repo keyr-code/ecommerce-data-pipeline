@@ -3,7 +3,7 @@ import pandas as pd
 
 # Load and inspect data
 df = pd.read_csv(
-    "/Users/kirenp/kiren2/projects_inprogress/2026_projects/Data Engineering Apprenticeship/Generated Sample Data/stage1_sample_data/raw_customers.csv"
+    "/Users/kiren/kiren2/projects_inprogress/2026_projects/Data Engineering Apprenticeship/Generated Sample Data/stage1_sample_data/raw_customers.csv"
 )
 
 # Create validator

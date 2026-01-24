@@ -22,7 +22,7 @@ def batch_load_data() -> Tuple[Dict[str, Any], PipelineLogger]:
     logger = PipelineLogger()
     print(f"Pipeline run ID: {logger.run_id}")
 
-    # clear db
+    # clear db - Dev only
     clear_data_only()
     # Log database clearing operation
     logger.log_database_operation(

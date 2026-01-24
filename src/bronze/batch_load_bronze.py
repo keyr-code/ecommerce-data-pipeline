@@ -20,6 +20,13 @@ data_csv = [
 ]
 
 schema = "ecommerce"
+table_mapping = {
+    "order_items.csv": "_raw_order_items",
+    "orders.csv": "raw_orders",
+    "products.csv": "raw_products",
+    "raw_customers.csv": "raw_customers_v2",
+    "customers.csv": "raw_customers",
+}
 
 
 def batch_load_bronze() -> Tuple[Dict[str, Any], PipelineLogger]:
@@ -40,7 +47,7 @@ def batch_load_bronze() -> Tuple[Dict[str, Any], PipelineLogger]:
 
     for data in data_csv:
         try:
-            table_name = f"raw_{data.split('.')[0]}"
+            table_name = table_mapping[data]
             data_path = os.path.join(os.getenv("DATA_PATH", "/app/data"), data)
 
             copy_command = f"COPY {schema}.{table_name} FROM '{data_path}' (FORMAT CSV, HEADER)"
@@ -67,7 +74,6 @@ def batch_load_bronze() -> Tuple[Dict[str, Any], PipelineLogger]:
         "loaded": loaded_files,
         "skipped": skipped_files,
     }
-    logger.log_pipeline_results(results)
 
     return results, logger
 

@@ -99,6 +99,41 @@ def show_failed_validations(days: int = 7):
         print(f"   Run: {failure['run_id']}")
         print(f"   Time: {failure['timestamp']}")
         print(f"   Success Rate: {content.get('success_rate')}%")
+        
+        validation_results = content.get('validation_results', [])
+        if validation_results:
+            print(f"   Failed Checks:")
+            for result in validation_results:
+                if result.get('status') == 'FAIL':
+                    print(f"     - {result.get('check_name')}: {result.get('message')}")
+
+
+def show_validation_details(run_id: str):
+    """Show detailed validation checks for a run"""
+    db = MongoLogDB()
+    logs = db.get_run_logs(run_id)
+    
+    validation_logs = [log for log in logs if log.get('log_type') == 'validation_report']
+    
+    if not validation_logs:
+        print(f"No validation reports found for run {run_id}")
+        return
+    
+    print(f"\n=== VALIDATION DETAILS FOR RUN {run_id} ===")
+    for log in validation_logs:
+        content = log.get('content', {})
+        filename = log.get('filename', 'Unknown')
+        print(f"\n {filename}")
+        print(f"   Passed: {content.get('passed')}")
+        print(f"   Severity: {content.get('severity')}")
+        print(f"   Success Rate: {content.get('success_rate')}%")
+        
+        validation_results = content.get('validation_results', [])
+        if validation_results:
+            print(f"   Validation Checks:")
+            for result in validation_results:
+                status_icon = "✅" if result.get('status') == 'PASS' else "❌"
+                print(f"     {status_icon} {result.get('check_name')}: {result.get('message')}")
 
 
 def show_stats(days: int = 30):
@@ -160,6 +195,10 @@ def main():
     list_parser = subparsers.add_parser('list', help='List recent pipeline runs')
     list_parser.add_argument('--limit', type=int, default=10, help='Number of runs to show')
     
+    # Validation details command
+    validation_parser = subparsers.add_parser('validation', help='Show detailed validation checks')
+    validation_parser.add_argument('run_id', help='Pipeline run ID')
+    
     # Ingest command
     ingest_parser = subparsers.add_parser('ingest', help='Ingest logs from directory')
     ingest_parser.add_argument('directory', help='Log directory path')
@@ -188,6 +227,9 @@ def main():
         
         elif args.command == 'list':
             list_recent_runs(args.limit)
+        
+        elif args.command == 'validation':
+            show_validation_details(args.run_id)
         
         elif args.command == 'ingest':
             db = MongoLogDB()

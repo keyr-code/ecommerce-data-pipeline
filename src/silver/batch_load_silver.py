@@ -7,98 +7,91 @@ from src.common.logger import PipelineLogger
 from typing import Dict, List, Any, Tuple, Union, Optional
 import os
 
-data_csv = [
-    "order_items.csv",
-    "orders.csv",
-    "products.csv",
-    "raw_customers.csv",
-    "customers.csv",
-]
+bronze_tables = {
+    "raw_customers": "customers",
+    "raw_customers_v2": "clean_customers",
+    "raw_orders": "orders",
+    "_raw_order_items": "order_items",
+    "raw_products": "products",
+}
 
 schema = "ecommerce"
 
 def batch_load_data() -> Tuple[Dict[str, Any], PipelineLogger]:
-    # Initialize logger
     logger = PipelineLogger()
     print(f"Pipeline run ID: {logger.run_id}")
 
-    # clear db - Dev only
     clear_data_only("silver")
-    # Log database clearing operation
     logger.log_database_operation(
         "ALL_TABLES", "CLEAR DATA", True, rows_affected="All rows deleted"
     )
 
-    # Check data quality first
     file_results = quality_check(logger)
 
     conn = duckdb.connect(
         os.getenv('DUCKDB_PATH', '/app/database/data_eng.db')
     )
 
-    loaded_files: List[str] = []
-    skipped_files: List[str] = []
+    loaded_tables: List[str] = []
+    skipped_tables: List[str] = []
 
-    for data in data_csv:
-        if file_results[data]["passed"]:
+    for bronze_table, silver_table in bronze_tables.items():
+        if file_results[bronze_table]["passed"]:
             try:
-                table_name = data.split(".")[0]
-                copy_command = f"COPY {schema}.{table_name} FROM '{os.getenv('DATA_PATH', '/app/data')}/{data}' (FORMAT CSV, HEADER)"
-
+                copy_command = f"INSERT INTO {schema}.{silver_table} SELECT * FROM {schema}.{bronze_table}"
                 conn.execute(copy_command)
 
-                # Get row count for logging
                 result = conn.execute(
-                    f"SELECT COUNT(*) FROM {schema}.{table_name}"
+                    f"SELECT COUNT(*) FROM {schema}.{silver_table}"
                 ).fetchone()
                 row_count = result[0] if result else None
 
                 logger.log_database_operation(
-                    data,
-                    f"COPY to {schema}.{table_name}",
+                    bronze_table,
+                    f"INSERT from {bronze_table} to {silver_table}",
                     True,
                     rows_affected=row_count,
                 )
-                loaded_files.append(data)
+                loaded_tables.append(bronze_table)
 
             except Exception as e:
                 logger.log_database_operation(
-                    data, f"COPY to {schema}.{data.split('.')[0]}", False, str(e)
+                    bronze_table, f"INSERT to {silver_table}", False, str(e)
                 )
-                print(f"Load error for {data}: {e}")
-                skipped_files.append(data)
+                print(f"Load error for {bronze_table}: {e}")
+                skipped_tables.append(bronze_table)
         else:
-            skipped_files.append(
-                f"{data} (quality issues: {file_results[data]['severity']})"
+            skipped_tables.append(
+                f"{bronze_table} (quality issues: {file_results[bronze_table]['severity']})"
             )
 
+    conn.close()
+
     pipeline_results: Dict[str, Any] = {
-        "loaded": loaded_files,
-        "skipped": skipped_files,
+        "loaded": loaded_tables,
+        "skipped": skipped_tables,
         "quality_results": file_results,
     }
 
-    # Log pipeline results
-    pipeline_log = logger.log_pipeline_results(pipeline_results)
+    logger.log_pipeline_results(pipeline_results)
 
     return pipeline_results, logger
 
 
 def quality_check(logger: PipelineLogger) -> Dict[str, Dict[str, Any]]:
-    # Collect results for all files
     file_results: Dict[str, Dict[str, Any]] = {}
 
-    for data in data_csv:
-        df = pd.read_csv(
-            os.getenv('DATA_PATH', '/app/data') + f'/{data}'
+    for bronze_table in bronze_tables.keys():
+        conn = duckdb.connect(
+            os.getenv('DUCKDB_PATH', '/app/database/data_eng.db')
         )
+        df = conn.execute(f"SELECT * FROM {schema}.{bronze_table}").df()
+        conn.close()
+        
         validator = DataQualityValidator(df)
+        results = validator.run_all_checks(config_mapping.get(bronze_table, {}))
 
-        # Run validation
-        results = validator.run_all_checks(config_mapping[data])
-
-        # Store results for this file
-        file_results[data] = {
+        file_results[bronze_table] = {
             "passed": not results["should_stop_pipeline"],
             "severity": results["highest_severity"],
             "critical_issues": [
@@ -108,8 +101,7 @@ def quality_check(logger: PipelineLogger) -> Dict[str, Dict[str, Any]]:
             ],
         }
 
-        # Log individual dataset validation
-        logger.log_dataset_validation(data, results, validator)
+        logger.log_dataset_validation(bronze_table, results, validator)
 
     return file_results
 
@@ -118,13 +110,13 @@ if __name__ == "__main__":
     results, logger = batch_load_data()
 
     print(f"\n📊 BATCH LOAD RESULTS:")
-    print(f"Loaded files: {results['loaded']}")
-    print(f"Skipped files: {results['skipped']}")
+    print(f"Loaded tables: {results['loaded']}")
+    print(f"Skipped tables: {results['skipped']}")
 
     print(f"\n📋 QUALITY SUMMARY:")
-    for filename, quality in results["quality_results"].items():
+    for table, quality in results["quality_results"].items():
         status = "✅" if quality["passed"] else "❌"
-        print(f"{status} {filename}: {quality['severity']} severity")
+        print(f"{status} {table}: {quality['severity']} severity")
 
     print(f"\n🆔 RUN ID: {logger.run_id}")
-    print(f"📊 Query logs: python mongo_query.py run {logger.run_id}")
+    print(f"📊 Query logs: python -m src.common.mongo_query run {logger.run_id}")

@@ -7,7 +7,7 @@ def reset_database():
         os.getenv('DUCKDB_PATH', '/app/database/data_eng.db')
     )
     schema = "ecommerce"
-    tables = ["customers", "products", "orders", "order_items", "raw_customers", "raw_customers","raw_products","raw_orders","raw_orders","raw_order_items","clean_customers"]
+    tables = ["customers", "products", "orders", "order_items", "raw_customers", "raw_customers_v2", "raw_products", "raw_orders", "_raw_order_items", "clean_customers"]
 
     try:
         # Create schema if it doesn't exist
@@ -72,14 +72,64 @@ def reset_database():
 
         conn.execute(
             f"""
-            CREATE TABLE {schema}.raw_customers(
-                customer_id INT, 
+            CREATE TABLE {schema}.raw_customers_v2(
+                customer_id VARCHAR(255), 
                 name VARCHAR(255), 
                 email VARCHAR(255), 
                 phone VARCHAR(255), 
-                age INT, 
-                country VARCHAR(255), 
-                signup_date DATE
+                age VARCHAR(255), 
+                country VARCHAR(255),
+                signup_date VARCHAR(255)
+            )
+        """
+        )
+
+        conn.execute(
+            f"""
+            CREATE TABLE {schema}.raw_products (
+                product_id VARCHAR(255), 
+                name VARCHAR(255),
+                category VARCHAR(255),
+                price VARCHAR(255),
+                stock VARCHAR(255),
+                supplier_id VARCHAR(255)
+            )
+        """
+        )
+
+        conn.execute(
+            f"""
+            CREATE TABLE {schema}.raw_orders(
+                order_id VARCHAR(255), 
+                customer_id VARCHAR(255), 
+                order_date VARCHAR(255), 
+                total_amount VARCHAR(255),
+                status VARCHAR(255)
+            )
+        """
+        )
+
+        conn.execute(
+            f"""
+            CREATE TABLE {schema}._raw_order_items(
+                order_item_id VARCHAR(255),
+                order_id VARCHAR(255),
+                product_id VARCHAR(255),
+                quantity VARCHAR(255),
+                unit_price VARCHAR(255)
+            )
+        """
+        )
+
+        conn.execute(
+            f"""
+            CREATE TABLE {schema}.raw_customers(
+                customer_id VARCHAR(255), 
+                name VARCHAR(255), 
+                email VARCHAR(255), 
+                country VARCHAR(255),
+                signup_date VARCHAR(255),
+                lifetime_value VARCHAR(255)
             )
         """
         )
@@ -217,7 +267,7 @@ def create_tables_if_not_exist(conn,stage):
                 email VARCHAR(255), 
                 phone VARCHAR(255), 
                 age VARCHAR(255), 
-                country VARCHAR(255), 
+                country VARCHAR(255),
                 signup_date VARCHAR(255)
             )
         """
@@ -266,10 +316,9 @@ def create_tables_if_not_exist(conn,stage):
                 customer_id VARCHAR(255), 
                 name VARCHAR(255), 
                 email VARCHAR(255), 
-                phone VARCHAR(255), 
-                age VARCHAR(255), 
-                country VARCHAR(255), 
-                signup_date VARCHAR(255)
+                country VARCHAR(255),
+                signup_date VARCHAR(255),
+                lifetime_value VARCHAR(255)
             )
         """)
 
